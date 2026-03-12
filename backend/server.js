@@ -8,7 +8,12 @@ const axios = require("axios");
 const path = require("path");
 
 const app = express();
-const git = simpleGit("./");
+
+// Git setup
+const git = simpleGit({
+  baseDir: "./",
+  binary: "git"
+});
 
 app.use(cors());
 app.use(express.json());
@@ -43,23 +48,14 @@ app.post("/add-name", async (req, res) => {
   const { name } = req.body;
 
   if (!name) {
-    return res.status(400).json({ error: "Name is required" });
+    return res.status(400).json({
+      error: "Name is required"
+    });
   }
 
   try {
 
-    // stash any local changes
-    await git.stash();
-
-    // pull latest repo changes
-    await git.pull("origin", "main");
-
-    // pop stash (if exists)
-    try {
-      await git.stash(["pop"]);
-    } catch (e) {}
-
-    // read names
+    // Read existing names
     const names = await fs.readJson(FILE_PATH);
 
     const newEntry = {
@@ -69,15 +65,20 @@ app.post("/add-name", async (req, res) => {
 
     names.push(newEntry);
 
-    // save updated file
+    // Save file
     await fs.writeJson(FILE_PATH, names, { spaces: 2 });
 
-    // commit change
+    // Git add
     await git.add("names.json");
+
+    // Git commit
     await git.commit(`Added name: ${name}`);
 
-    // push commit
-    await git.push("origin", "main");
+    // Push using GitHub token
+    await git.push(
+      `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`,
+      "main"
+    );
 
     res.json({
       success: true,
@@ -102,7 +103,9 @@ app.get("/names", async (req, res) => {
     const names = await fs.readJson(FILE_PATH);
     res.json(names);
   } catch (error) {
-    res.status(500).json({ error: "Failed to read names" });
+    res.status(500).json({
+      error: "Failed to read names"
+    });
   }
 });
 
@@ -113,7 +116,7 @@ app.get("/pipeline-status", async (req, res) => {
   try {
 
     const response = await axios.get(
-      `https://api.github.com/repos/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs`,
+      `https://api.github.com/repos/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs?per_page=5`,
       {
         headers: {
           Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
@@ -122,7 +125,12 @@ app.get("/pipeline-status", async (req, res) => {
       }
     );
 
-    const latestRun = response.data.workflow_runs[0];
+    const runs = response.data.workflow_runs;
+
+    const latestRun =
+      runs.find(run => run.status === "in_progress") ||
+      runs.find(run => run.status === "queued") ||
+      runs[0];
 
     res.json({
       status: latestRun.status,
@@ -132,12 +140,15 @@ app.get("/pipeline-status", async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to fetch pipeline status" });
+
+    res.status(500).json({
+      error: "Failed to fetch pipeline status"
+    });
   }
 });
 
 /* -----------------------------
-   Start Server
+   Start server
 --------------------------------*/
 const PORT = process.env.PORT || 5000;
 

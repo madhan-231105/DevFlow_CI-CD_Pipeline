@@ -4,8 +4,7 @@ import "./App.css";
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
 
 // 🔹 Use your Vercel backend
-const API = "https://devflow-pipeline-backend.vercel.app";
-
+const API = "https://devflow-ci-cd-pipeline.onrender.com";
 function App() {
   const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
