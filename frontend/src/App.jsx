@@ -8,6 +8,7 @@ const API = "https://devflow-ci-cd-pipeline.onrender.com";
 function App() {
   const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   /* ---------------------------
      Trigger CI/CD
@@ -17,41 +18,78 @@ function App() {
 
     if (!name) return;
 
+    setLoading(true);
+
     try {
       await fetch(`${API}/add-name`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name })
       });
 
       setNames((prev) => [...prev, name]);
     } catch (error) {
       console.error("Failed to trigger pipeline:", error);
     }
+
+    setLoading(false);
+  };
+
+  /* ---------------------------
+     Fetch names list
+  ----------------------------*/
+  const fetchNames = async () => {
+    try {
+      const res = await fetch(`${API}/names`);
+      const data = await res.json();
+
+      setNames(data.map((n) => n.name));
+    } catch (err) {
+      console.error("Failed to fetch names", err);
+    }
   };
 
   /* ---------------------------
      Fetch pipeline status
   ----------------------------*/
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch(`${API}/pipeline-status`);
-        const data = await res.json();
-        setPipelineStatus(data);
-      } catch (error) {
-        console.error("Error fetching pipeline status:", error);
-      }
-    };
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${API}/pipeline-status`);
+      const data = await res.json();
+      setPipelineStatus(data);
+    } catch (error) {
+      console.error("Error fetching pipeline status:", error);
+    }
+  };
 
+  useEffect(() => {
+    fetchNames();
     fetchStatus();
 
     const interval = setInterval(fetchStatus, 5000);
 
     return () => clearInterval(interval);
   }, []);
+
+  /* ---------------------------
+     Pipeline stage logic
+  ----------------------------*/
+  const getStageStatus = (index) => {
+    if (!pipelineStatus) return "";
+
+    if (pipelineStatus.status === "in_progress") {
+      if (index === 1) return "active";
+      if (index < 1) return "completed";
+    }
+
+    if (pipelineStatus.conclusion === "success") {
+      return "completed";
+    }
+
+    return "";
+  };
 
   const getStatusText = () => {
     if (!pipelineStatus) return "Idle 💤";
@@ -83,14 +121,19 @@ function App() {
           automatically updates pipeline status.
         </p>
 
+        {/* Pipeline stages */}
         <div className="pipeline">
-          {STAGES.map((stage) => (
-            <div key={stage} className="stage">
+          {STAGES.map((stage, index) => (
+            <div
+              key={stage}
+              className={`stage ${getStageStatus(index)}`}
+            >
               {stage}
             </div>
           ))}
         </div>
 
+        {/* Status box */}
         <div className="status-box">
           <h3>Pipeline Status</h3>
           <p className="status-text">{getStatusText()}</p>
@@ -106,10 +149,16 @@ function App() {
           )}
         </div>
 
-        <button className="deploy-btn" onClick={triggerPipeline}>
-          Trigger CI/CD
+        {/* Trigger button */}
+        <button
+          className="deploy-btn"
+          onClick={triggerPipeline}
+          disabled={loading}
+        >
+          {loading ? "Triggering..." : "Trigger CI/CD"}
         </button>
 
+        {/* Names list */}
         <div className="names-section">
           <h3>Triggered By</h3>
           <ul>
