@@ -1,11 +1,12 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs-extra");
 const simpleGit = require("simple-git");
+const axios = require("axios");
 
 const app = express();
-
-// connect git to root project
 const git = simpleGit("../");
 
 app.use(cors());
@@ -15,40 +16,36 @@ const FILE_PATH = "../names.json";
 
 // Ensure names.json exists
 async function initFile() {
-  if (!await fs.pathExists(FILE_PATH)) {
+  if (!(await fs.pathExists(FILE_PATH))) {
     await fs.writeJson(FILE_PATH, []);
   }
 }
 
 initFile();
 
-// Add name and trigger git push
+/* -----------------------------
+   Add name + trigger git push
+--------------------------------*/
 app.post("/add-name", async (req, res) => {
   const { name } = req.body;
 
   if (!name) {
-    return res.status(400).json({
-      error: "Name is required"
-    });
+    return res.status(400).json({ error: "Name is required" });
   }
 
   try {
-
-    // Read existing names
     const names = await fs.readJson(FILE_PATH);
 
-    // Add new entry
     const newEntry = {
       name,
-      time: new Date().toISOString()
+      time: new Date().toISOString(),
     };
 
     names.push(newEntry);
 
-    // Save updated list
     await fs.writeJson(FILE_PATH, names, { spaces: 2 });
 
-    // --- Git Automation ---
+    // Git automation
     await git.pull("origin", "main", { "--rebase": "true" });
     await git.add(".");
     await git.commit(`Added name: ${name}`);
@@ -56,29 +53,48 @@ app.post("/add-name", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Name added and pushed to GitHub 🚀",
-      data: newEntry
+      message: "Name added and pushed 🚀",
+      data: newEntry,
     });
-
   } catch (error) {
-    console.error("Git operation error:", error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to run git automation"
-    });
+    console.error(error);
+    res.status(500).json({ error: "Git operation failed" });
   }
 });
 
-// Get list of names
+/* -----------------------------
+   Get names list
+--------------------------------*/
 app.get("/names", async (req, res) => {
+  const names = await fs.readJson(FILE_PATH);
+  res.json(names);
+});
+
+/* -----------------------------
+   Get GitHub pipeline status
+--------------------------------*/
+app.get("/pipeline-status", async (req, res) => {
   try {
-    const names = await fs.readJson(FILE_PATH);
-    res.json(names);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to read names"
+    const response = await axios.get(
+      `https://api.github.com/repos/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    const latest = response.data.workflow_runs[0];
+
+    res.json({
+      status: latest.status,
+      conclusion: latest.conclusion,
+      url: latest.html_url,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch pipeline status" });
   }
 });
 

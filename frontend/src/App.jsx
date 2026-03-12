@@ -4,126 +4,107 @@ import "./App.css";
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
 
 function App() {
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [isRunning, setIsRunning] = useState(false);
   const [names, setNames] = useState([]);
+  const [pipelineStatus, setPipelineStatus] = useState(null);
 
+  /* ---------------------------
+     Trigger CI/CD
+  ----------------------------*/
   const triggerPipeline = async () => {
     const name = prompt("Enter your name");
 
     if (!name) return;
 
-    try {
-      await fetch("http://localhost:5000/add-name", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
+    await fetch("http://localhost:5000/add-name", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
 
-      setNames((prev) => [...prev, name]);
-
-      startSimulation();
-    } catch (error) {
-      console.error("Error triggering pipeline", error);
-    }
+    setNames((prev) => [...prev, name]);
   };
 
-  const startSimulation = () => {
-    setCurrentStep(-1);
-    setIsRunning(true);
-
-    setTimeout(() => {
-      setCurrentStep(0);
-    }, 200);
-  };
-
+  /* ---------------------------
+     Fetch pipeline status
+  ----------------------------*/
   useEffect(() => {
-    if (isRunning && currentStep >= 0 && currentStep < STAGES.length) {
-      const timer = setTimeout(() => {
-        setCurrentStep((prev) => prev + 1);
-      }, 1200);
+    const fetchStatus = async () => {
+      const res = await fetch("http://localhost:5000/pipeline-status");
+      const data = await res.json();
+      setPipelineStatus(data);
+    };
 
-      return () => clearTimeout(timer);
-    }
+    fetchStatus();
 
-    if (currentStep === STAGES.length) {
-      setIsRunning(false);
-    }
-  }, [isRunning, currentStep]);
+    const interval = setInterval(fetchStatus, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const getStatusText = () => {
-    if (!isRunning && currentStep === -1) return "Idle 💤";
-    if (isRunning && currentStep < STAGES.length)
-      return `Running: ${STAGES[currentStep]} ⏳`;
-    if (!isRunning && currentStep === STAGES.length)
-      return "All Systems Go! ✅";
+    if (!pipelineStatus) return "Idle 💤";
 
-    return "Idle 💤";
+    if (pipelineStatus.status === "in_progress")
+      return "Pipeline Running ⏳";
+
+    if (pipelineStatus.conclusion === "success")
+      return "Deployment Successful ✅";
+
+    if (pipelineStatus.conclusion === "failure")
+      return "Pipeline Failed ❌";
+
+    return "Waiting...";
   };
 
   return (
     <div className="container">
       <header>
         <h1>DevFlow 🚀</h1>
-        <p className="subtitle">Automated CI/CD Pipeline Visualizer</p>
+        <p className="subtitle">
+          Real-Time CI/CD Pipeline Dashboard
+        </p>
       </header>
 
       <div className="card">
         <p className="description">
-          This project demonstrates a Continuous Integration and Continuous
-          Deployment pipeline using GitHub Actions.
+          This dashboard monitors GitHub Actions and
+          automatically updates pipeline status.
         </p>
 
         <div className="pipeline">
-          {STAGES.map((stage, index) => (
-            <div key={stage} className="stage-wrapper">
-              <div
-                className={`stage ${
-                  index === currentStep ? "active" : ""
-                } ${index < currentStep ? "completed" : ""}`}
-              >
-                {stage}
-              </div>
-
-              {index < STAGES.length - 1 && (
-                <div
-                  className={`arrow ${
-                    index < currentStep ? "completed-arrow" : ""
-                  }`}
-                >
-                  →
-                </div>
-              )}
+          {STAGES.map((stage) => (
+            <div key={stage} className="stage">
+              {stage}
             </div>
           ))}
         </div>
 
         <div className="status-box">
           <h3>Pipeline Status</h3>
-          <p
-            className={`status-text ${
-              currentStep === STAGES.length ? "success" : ""
-            }`}
-          >
-            {getStatusText()}
-          </p>
+          <p className="status-text">{getStatusText()}</p>
+
+          {pipelineStatus && (
+            <a
+              href={pipelineStatus.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View GitHub Workflow
+            </a>
+          )}
         </div>
 
-        <button
-          className="deploy-btn"
-          onClick={triggerPipeline}
-          disabled={isRunning}
-        >
-          {isRunning ? "Deploying..." : "Trigger CI/CD"}
+        <button className="deploy-btn" onClick={triggerPipeline}>
+          Trigger CI/CD
         </button>
 
         <div className="names-section">
           <h3>Triggered By</h3>
           <ul>
-            {names.map((n, index) => (
-              <li key={index}>{n}</li>
+            {names.map((n, i) => (
+              <li key={i}>{n}</li>
             ))}
           </ul>
         </div>
