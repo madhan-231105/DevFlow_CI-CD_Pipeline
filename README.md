@@ -30,7 +30,7 @@ This project demonstrates **CI/CD concepts, GitHub Actions integration, and DevO
 
 ### 🌐 Frontend (Dashboard)
 
-[https://devflow-ci-cd-pipeline.vercel.app](https://devflow-ci-cd-pipeline.vercel.app)
+[https://devflow-ci-cd.vercel.app/](https://devflow-ci-cd.vercel.app/)
 
 ### ⚙ Backend API
 
