@@ -20,9 +20,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+        working-directory: frontend
 
       - name: Build Frontend
         run: npm run build
+        working-directory: frontend
 
       - name: Pipeline Complete
         run: echo "🚀 DevFlow pipeline executed successfully!"
