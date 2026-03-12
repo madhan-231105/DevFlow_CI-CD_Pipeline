@@ -12,6 +12,7 @@ body {
 .container {
   text-align: center;
   padding: 20px;
+  width: 100%;
 }
 
 h1 {
@@ -29,13 +30,13 @@ h1 {
 }
 
 .card {
-  margin-top: 40px;
+  margin: 40px auto;
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(10px);
   padding: 40px;
   border-radius: 20px;
-  width: 100%;
-  max-width: 700px;
+  width: 90%;
+  max-width: 850px; /* Slightly wider to accommodate the table */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
@@ -46,17 +47,13 @@ h1 {
   margin-bottom: 40px;
 }
 
+/* Pipeline Visualizer */
 .pipeline {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin: 40px 0;
-}
-
-.stage-wrapper {
-  display: flex;
-  align-items: center;
-  flex: 1;
+  gap: 10px;
 }
 
 .stage {
@@ -69,53 +66,101 @@ h1 {
   border: 2px solid transparent;
   flex: 1;
   text-align: center;
+  font-size: 0.9rem;
 }
 
-/* Active stage */
 .stage.active {
   background: #0ea5e9;
   color: white;
-  transform: scale(1.1);
+  transform: scale(1.05);
   box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
 }
 
-/* Completed stage */
 .stage.completed {
   background: #22c55e;
   color: white;
 }
 
-.arrow {
-  margin: 0 10px;
-  color: #475569;
-  font-weight: bold;
-  transition: color 0.4s;
+/* History Section */
+.history {
+  margin-top: 50px;
+  text-align: left;
 }
 
-.arrow.completed-arrow {
-  color: #22c55e;
+.history h3 {
+  font-size: 1.4rem;
+  color: #f1f5f9;
+  margin-bottom: 15px;
+  border-left: 4px solid #38bdf8;
+  padding-left: 15px;
 }
 
-.status-box {
-  margin-top: 30px;
-  padding: 15px;
-  background: rgba(15, 23, 42, 0.5);
+.history-table-wrapper {
+  overflow-x: auto;
   border-radius: 12px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.status-text {
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: #38bdf8;
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
 }
 
-.status-text.success {
+.history-table th {
+  background: rgba(51, 65, 85, 0.5);
+  padding: 12px 15px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.history-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.history-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Status Badges in Table */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.status-badge.success {
+  background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.failure {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge.in_progress, .status-badge.queued {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
   animation: pulse 2s infinite;
 }
 
+/* Trigger Button & Sections */
 .deploy-btn {
-  margin-top: 30px;
+  margin-top: 20px;
   padding: 15px 40px;
   border: none;
   background: #22c55e;
@@ -125,35 +170,60 @@ h1 {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .deploy-btn:hover:not(:disabled) {
   background: #16a34a;
   transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4);
 }
 
-.deploy-btn:disabled {
-  background: #475569;
-  cursor: not-allowed;
-  opacity: 0.7;
+.names-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.names-section h3 {
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.names-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.names-list li {
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 @keyframes pulse {
   0% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.6; }
   100% { opacity: 1; }
 }
 
-.names-section {
-  margin-top: 30px;
-  text-align: left;
-}
-
-.names-section ul {
-  padding-left: 20px;
-}
-
-.names-section li {
-  margin: 5px 0;
-  color: #38bdf8;
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .pipeline {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stage {
+    width: 100%;
+  }
+  h1 {
+    font-size: 2.5rem;
+  }
 }

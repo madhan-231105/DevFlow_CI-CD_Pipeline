@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
-
-// 🔹 Use your Vercel backend
 const API = "https://devflow-ci-cd-pipeline.onrender.com";
+const REPO_OWNER = "madhan-231105";
+const REPO_NAME = "DevFlow_CI-CD_Pipeline";
+
 function App() {
   const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
+  const [pipelineHistory, setPipelineHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  /* ---------------------------
-     Fetch pipeline status
-  ----------------------------*/
+  // Fetch latest pipeline status from your backend
   const fetchStatus = async () => {
     try {
       const res = await fetch(`${API}/pipeline-status`);
@@ -23,159 +23,118 @@ function App() {
     }
   };
 
-  /* ---------------------------
-     Trigger CI/CD
-  ----------------------------*/
+  // Fetch workflow history directly from GitHub API
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?per_page=8`
+      );
+      const data = await res.json();
+      setPipelineHistory(data.workflow_runs || []);
+    } catch (error) {
+      console.error("Failed to fetch pipeline history", error);
+    }
+  };
+
   const triggerPipeline = async () => {
-    const name = prompt("Enter your name");
-
+    const name = prompt("Enter your name to trigger the pipeline:");
     if (!name) return;
-
     setLoading(true);
-
     try {
       await fetch(`${API}/add-name`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name })
       });
-
-      setNames((prev) => [...prev, name]);
-
-      // immediately refresh pipeline status
       fetchStatus();
-
+      fetchHistory();
     } catch (error) {
       console.error("Failed to trigger pipeline:", error);
     }
-
     setLoading(false);
   };
 
-  /* ---------------------------
-     Fetch names
-  ----------------------------*/
-  const fetchNames = async () => {
-    try {
-      const res = await fetch(`${API}/names`);
-      const data = await res.json();
-
-      setNames(data.map((n) => n.name));
-    } catch (err) {
-      console.error("Failed to fetch names", err);
-    }
-  };
-
-  /* ---------------------------
-     Initial load
-  ----------------------------*/
   useEffect(() => {
-    fetchNames();
     fetchStatus();
-
-    const interval = setInterval(fetchStatus, 3000);
-
+    fetchHistory();
+    // Poll every 15 seconds (to avoid GitHub API rate limits)
+    const interval = setInterval(() => {
+      fetchStatus();
+      fetchHistory();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
-
-  /* ---------------------------
-     Stage logic
-  ----------------------------*/
-  const getStageStatus = (index) => {
-    if (!pipelineStatus) return "";
-
-    if (pipelineStatus.status === "in_progress") {
-      if (index === 0) return "completed";
-      if (index === 1) return "active";
-    }
-
-    if (pipelineStatus.conclusion === "success") {
-      return "completed";
-    }
-
-    return "";
-  };
-
-  const getStatusText = () => {
-    if (!pipelineStatus) return "Idle 💤";
-
-    if (pipelineStatus.status === "queued")
-      return "Pipeline Queued ⏳";
-
-    if (pipelineStatus.status === "in_progress")
-      return "Pipeline Running ⏳";
-
-    if (pipelineStatus.conclusion === "success")
-      return "Deployment Successful ✅";
-
-    if (pipelineStatus.conclusion === "failure")
-      return "Pipeline Failed ❌";
-
-    return "Waiting...";
-  };
 
   return (
     <div className="container">
       <header>
         <h1>DevFlow 🚀</h1>
-        <p className="subtitle">
-          Real-Time CI/CD Pipeline Dashboard
-        </p>
+        <p className="subtitle">Real-Time CI/CD Pipeline Dashboard</p>
       </header>
 
       <div className="card">
-        <p className="description">
-          This dashboard monitors GitHub Actions and
-          automatically updates pipeline status.
-        </p>
-
-        {/* Pipeline stages */}
+        {/* Pipeline Visualizer */}
         <div className="pipeline">
-          {STAGES.map((stage, index) => (
-            <div
-              key={stage}
-              className={`stage ${getStageStatus(index)}`}
-            >
-              {stage}
-            </div>
-          ))}
+          {STAGES.map((stage, index) => {
+            let statusClass = "";
+            if (pipelineStatus?.status === "in_progress" && index === 1) statusClass = "active";
+            if (pipelineStatus?.conclusion === "success") statusClass = "completed";
+            return (
+              <div key={stage} className={`stage ${statusClass}`}>
+                {stage}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Status box */}
-        <div className="status-box">
-          <h3>Pipeline Status</h3>
-          <p className="status-text">{getStatusText()}</p>
-
-          {pipelineStatus && (
-            <a
-              href={pipelineStatus.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View GitHub Workflow
-            </a>
-          )}
-        </div>
-
-        {/* Trigger button */}
-        <button
-          className="deploy-btn"
-          onClick={triggerPipeline}
-          disabled={loading}
-        >
+        <button className="deploy-btn" onClick={triggerPipeline} disabled={loading}>
           {loading ? "Triggering..." : "Trigger CI/CD"}
         </button>
 
-        {/* Names list */}
-        <div className="names-section">
-          <h3>Triggered By</h3>
-          <ul>
-            {names.map((n, i) => (
-              <li key={i}>{n}</li>
-            ))}
-          </ul>
+        {/* Pipeline History Table */}
+        <div className="history-section">
+          <div className="section-header">
+            <h3>Pipeline History</h3>
+            <a 
+              href={`https://github.com/${REPO_OWNER}/${REPO_NAME}/actions`} 
+              target="_blank" 
+              rel="noreferrer"
+              className="view-all-link"
+            >
+              View All on GitHub ↗
+            </a>
+          </div>
+
+          <div className="table-container">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Status</th>
+                  <th>Commit</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pipelineHistory.map((run) => (
+                  <tr key={run.id}>
+                    <td>
+                      <a href={run.html_url} target="_blank" rel="noreferrer" className="run-number">
+                        #{run.run_number}
+                      </a>
+                    </td>
+                    <td>
+                      <span className={`badge ${run.conclusion || run.status}`}>
+                        {run.conclusion || run.status}
+                      </span>
+                    </td>
+                    <td className="commit-sha">{run.head_sha.slice(0, 7)}</td>
+                    <td className="time-cell">{new Date(run.created_at).toLocaleTimeString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
