@@ -3,12 +3,26 @@ import "./App.css";
 
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
 
-const API = "https://devflow-ci-cd-pipeline.onrender.com";
+// 🔹 Use your Vercel backend
+const API = "https://devflow-pipeline-backend.vercel.app";
 
 function App() {
   const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  /* ---------------------------
+     Fetch pipeline status
+  ----------------------------*/
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${API}/pipeline-status`);
+      const data = await res.json();
+      setPipelineStatus(data);
+    } catch (error) {
+      console.error("Error fetching pipeline status:", error);
+    }
+  };
 
   /* ---------------------------
      Trigger CI/CD
@@ -30,6 +44,10 @@ function App() {
       });
 
       setNames((prev) => [...prev, name]);
+
+      // immediately refresh pipeline status
+      fetchStatus();
+
     } catch (error) {
       console.error("Failed to trigger pipeline:", error);
     }
@@ -38,7 +56,7 @@ function App() {
   };
 
   /* ---------------------------
-     Fetch names list
+     Fetch names
   ----------------------------*/
   const fetchNames = async () => {
     try {
@@ -52,36 +70,26 @@ function App() {
   };
 
   /* ---------------------------
-     Fetch pipeline status
+     Initial load
   ----------------------------*/
-  const fetchStatus = async () => {
-    try {
-      const res = await fetch(`${API}/pipeline-status`);
-      const data = await res.json();
-      setPipelineStatus(data);
-    } catch (error) {
-      console.error("Error fetching pipeline status:", error);
-    }
-  };
-
   useEffect(() => {
     fetchNames();
     fetchStatus();
 
-    const interval = setInterval(fetchStatus, 5000);
+    const interval = setInterval(fetchStatus, 3000);
 
     return () => clearInterval(interval);
   }, []);
 
   /* ---------------------------
-     Pipeline stage logic
+     Stage logic
   ----------------------------*/
   const getStageStatus = (index) => {
     if (!pipelineStatus) return "";
 
     if (pipelineStatus.status === "in_progress") {
+      if (index === 0) return "completed";
       if (index === 1) return "active";
-      if (index < 1) return "completed";
     }
 
     if (pipelineStatus.conclusion === "success") {
@@ -93,6 +101,9 @@ function App() {
 
   const getStatusText = () => {
     if (!pipelineStatus) return "Idle 💤";
+
+    if (pipelineStatus.status === "queued")
+      return "Pipeline Queued ⏳";
 
     if (pipelineStatus.status === "in_progress")
       return "Pipeline Running ⏳";
