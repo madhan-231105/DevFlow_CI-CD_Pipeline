@@ -6,12 +6,14 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
+
+/* Layout */
 
 .container {
   text-align: center;
-  padding: 20px;
+  padding: 40px 20px;
   width: 100%;
 }
 
@@ -29,14 +31,16 @@ h1 {
   margin-top: 5px;
 }
 
+/* Card */
+
 .card {
   margin: 40px auto;
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(10px);
   padding: 40px;
   border-radius: 20px;
-  width: 90%;
-  max-width: 850px; /* Slightly wider to accommodate the table */
+  width: 95%;
+  max-width: 1000px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
@@ -47,18 +51,19 @@ h1 {
   margin-bottom: 40px;
 }
 
-/* Pipeline Visualizer */
+/* Pipeline */
+
 .pipeline {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin: 40px 0;
-  gap: 10px;
+  gap: 12px;
 }
 
 .stage {
   background: #334155;
-  padding: 12px 18px;
+  padding: 14px 18px;
   border-radius: 8px;
   color: #94a3b8;
   font-weight: 600;
@@ -66,7 +71,6 @@ h1 {
   border: 2px solid transparent;
   flex: 1;
   text-align: center;
-  font-size: 0.9rem;
 }
 
 .stage.active {
@@ -81,13 +85,14 @@ h1 {
   color: white;
 }
 
-/* History Section */
-.history {
+/* Pipeline History */
+
+.history-section {
   margin-top: 50px;
   text-align: left;
 }
 
-.history h3 {
+.history-section h3 {
   font-size: 1.4rem;
   color: #f1f5f9;
   margin-bottom: 15px;
@@ -95,32 +100,36 @@ h1 {
   padding-left: 15px;
 }
 
-.history-table-wrapper {
+/* Table wrapper */
+
+.table-container {
   overflow-x: auto;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Bigger table */
+
 .history-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
-  text-align: left;
+  min-width: 700px;
+  font-size: 15px;
 }
 
 .history-table th {
   background: rgba(51, 65, 85, 0.5);
-  padding: 12px 15px;
+  padding: 16px;
   color: #94a3b8;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .history-table td {
-  padding: 12px 15px;
+  padding: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   color: #cbd5e1;
 }
@@ -129,15 +138,30 @@ h1 {
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* Status Badges in Table */
+/* Commit text */
+
+.commit-sha {
+  font-family: monospace;
+  color: #38bdf8;
+}
+
+/* Time */
+
+.time-cell {
+  color: #94a3b8;
+}
+
+/* Status badges */
+
 .status-badge {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 600;
-  display: inline-block;
   text-transform: capitalize;
 }
+
+/* Success */
 
 .status-badge.success {
   background: rgba(34, 197, 94, 0.15);
@@ -145,23 +169,29 @@ h1 {
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
+/* Failure */
+
 .status-badge.failure {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.status-badge.in_progress, .status-badge.queued {
+/* Running */
+
+.status-badge.in_progress,
+.status-badge.queued {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.3);
   animation: pulse 2s infinite;
 }
 
-/* Trigger Button & Sections */
+/* Button */
+
 .deploy-btn {
-  margin-top: 20px;
-  padding: 15px 40px;
+  margin-top: 25px;
+  padding: 16px 40px;
   border: none;
   background: #22c55e;
   color: white;
@@ -178,6 +208,8 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4);
 }
+
+/* Triggered users */
 
 .names-section {
   margin-top: 40px;
@@ -202,11 +234,13 @@ h1 {
 .names-list li {
   background: rgba(56, 189, 248, 0.1);
   color: #38bdf8;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 15px;
   font-size: 0.85rem;
   border: 1px solid rgba(56, 189, 248, 0.2);
 }
+
+/* Animation */
 
 @keyframes pulse {
   0% { opacity: 1; }
@@ -214,16 +248,25 @@ h1 {
   100% { opacity: 1; }
 }
 
-/* Mobile Responsiveness */
+/* Mobile */
+
 @media (max-width: 600px) {
+
   .pipeline {
     flex-direction: column;
     gap: 10px;
   }
+
   .stage {
     width: 100%;
   }
+
   h1 {
-    font-size: 2.5rem;
+    font-size: 2.3rem;
   }
+
+  .card {
+    padding: 25px;
+  }
+
 }
