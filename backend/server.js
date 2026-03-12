@@ -5,14 +5,25 @@ const cors = require("cors");
 const fs = require("fs-extra");
 const simpleGit = require("simple-git");
 const axios = require("axios");
+const path = require("path");
 
 const app = express();
-const git = simpleGit("../");
+const git = simpleGit("./");
 
 app.use(cors());
 app.use(express.json());
 
-const FILE_PATH = "../names.json";
+const FILE_PATH = path.join(__dirname, "names.json");
+
+/* -----------------------------
+   Root route
+--------------------------------*/
+app.get("/", (req, res) => {
+  res.json({
+    message: "DevFlow Backend Running 🚀",
+    endpoints: ["/add-name", "/names", "/pipeline-status"]
+  });
+});
 
 /* -----------------------------
    Ensure names.json exists
@@ -37,50 +48,48 @@ app.post("/add-name", async (req, res) => {
 
   try {
 
-    /* 1️⃣ Stash any local changes */
+    // stash any local changes
     await git.stash();
 
-    /* 2️⃣ Pull latest changes from GitHub */
+    // pull latest repo changes
     await git.pull("origin", "main");
 
-    /* 3️⃣ Restore stashed changes if any */
+    // pop stash (if exists)
     try {
       await git.stash(["pop"]);
-    } catch (e) {
-      // no stash present
-    }
+    } catch (e) {}
 
-    /* 4️⃣ Read names.json */
+    // read names
     const names = await fs.readJson(FILE_PATH);
 
     const newEntry = {
       name,
-      time: new Date().toISOString(),
+      time: new Date().toISOString()
     };
 
     names.push(newEntry);
 
-    /* 5️⃣ Write updated names.json */
+    // save updated file
     await fs.writeJson(FILE_PATH, names, { spaces: 2 });
 
-    /* 6️⃣ Commit change */
+    // commit change
     await git.add("names.json");
     await git.commit(`Added name: ${name}`);
 
-    /* 7️⃣ Push commit */
+    // push commit
     await git.push("origin", "main");
 
     res.json({
       success: true,
       message: "Name added and pushed 🚀",
-      data: newEntry,
+      data: newEntry
     });
 
   } catch (error) {
     console.error("Git operation error:", error);
 
     res.status(500).json({
-      error: "Git operation failed",
+      error: "Git operation failed"
     });
   }
 });
@@ -108,8 +117,8 @@ app.get("/pipeline-status", async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-          Accept: "application/vnd.github+json",
-        },
+          Accept: "application/vnd.github+json"
+        }
       }
     );
 
@@ -118,7 +127,7 @@ app.get("/pipeline-status", async (req, res) => {
     res.json({
       status: latestRun.status,
       conclusion: latestRun.conclusion,
-      url: latestRun.html_url,
+      url: latestRun.html_url
     });
 
   } catch (error) {
