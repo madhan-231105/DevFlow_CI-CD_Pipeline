@@ -6,6 +6,29 @@ const STAGES = ["Code Push", "Build", "Test", "Deploy"];
 function App() {
   const [currentStep, setCurrentStep] = useState(-1);
   const [isRunning, setIsRunning] = useState(false);
+  const [names, setNames] = useState([]);
+
+  const triggerPipeline = async () => {
+    const name = prompt("Enter your name");
+
+    if (!name) return;
+
+    try {
+      await fetch("http://localhost:5000/add-name", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      setNames((prev) => [...prev, name]);
+
+      startSimulation();
+    } catch (error) {
+      console.error("Error triggering pipeline", error);
+    }
+  };
 
   const startSimulation = () => {
     setCurrentStep(-1);
@@ -90,15 +113,20 @@ function App() {
 
         <button
           className="deploy-btn"
-          onClick={startSimulation}
+          onClick={triggerPipeline}
           disabled={isRunning}
         >
-          {isRunning
-            ? "Deploying..."
-            : currentStep === STAGES.length
-            ? "Restart Deployment"
-            : "Simulate Deployment"}
+          {isRunning ? "Deploying..." : "Trigger CI/CD"}
         </button>
+
+        <div className="names-section">
+          <h3>Triggered By</h3>
+          <ul>
+            {names.map((n, index) => (
+              <li key={index}>{n}</li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
