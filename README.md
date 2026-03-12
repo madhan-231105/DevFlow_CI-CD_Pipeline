@@ -1,10 +1,3 @@
-Great, Madhan 👍
-Here is a **professional GitHub-style README.md with badges**. This looks much stronger for **resume / recruiters / DevOps portfolio**.
-
-You can **copy-paste directly into `README.md`**.
-
----
-
 # 🚀 DevFlow – CI/CD Pipeline Dashboard
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/madhan-231105/DevFlow_CI-CD_Pipeline)
