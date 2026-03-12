@@ -3,6 +3,8 @@ import "./App.css";
 
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
 
+const API = "https://devflow-ci-cd-pipeline.onrender.com";
+
 function App() {
   const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
@@ -15,15 +17,19 @@ function App() {
 
     if (!name) return;
 
-    await fetch("http://localhost:5000/add-name", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name }),
-    });
+    try {
+      await fetch(`${API}/add-name`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
 
-    setNames((prev) => [...prev, name]);
+      setNames((prev) => [...prev, name]);
+    } catch (error) {
+      console.error("Failed to trigger pipeline:", error);
+    }
   };
 
   /* ---------------------------
@@ -31,9 +37,13 @@ function App() {
   ----------------------------*/
   useEffect(() => {
     const fetchStatus = async () => {
-      const res = await fetch("http://localhost:5000/pipeline-status");
-      const data = await res.json();
-      setPipelineStatus(data);
+      try {
+        const res = await fetch(`${API}/pipeline-status`);
+        const data = await res.json();
+        setPipelineStatus(data);
+      } catch (error) {
+        console.error("Error fetching pipeline status:", error);
+      }
     };
 
     fetchStatus();
