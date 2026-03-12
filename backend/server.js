@@ -14,7 +14,9 @@ app.use(express.json());
 
 const FILE_PATH = "../names.json";
 
-// Ensure names.json exists
+/* -----------------------------
+   Ensure names.json exists
+--------------------------------*/
 async function initFile() {
   if (!(await fs.pathExists(FILE_PATH))) {
     await fs.writeJson(FILE_PATH, []);
@@ -34,6 +36,21 @@ app.post("/add-name", async (req, res) => {
   }
 
   try {
+
+    /* 1️⃣ Stash any local changes */
+    await git.stash();
+
+    /* 2️⃣ Pull latest changes from GitHub */
+    await git.pull("origin", "main");
+
+    /* 3️⃣ Restore stashed changes if any */
+    try {
+      await git.stash(["pop"]);
+    } catch (e) {
+      // no stash present
+    }
+
+    /* 4️⃣ Read names.json */
     const names = await fs.readJson(FILE_PATH);
 
     const newEntry = {
@@ -43,12 +60,14 @@ app.post("/add-name", async (req, res) => {
 
     names.push(newEntry);
 
+    /* 5️⃣ Write updated names.json */
     await fs.writeJson(FILE_PATH, names, { spaces: 2 });
 
-    // Git automation
-    await git.pull("origin", "main", { "--rebase": "true" });
-    await git.add(".");
+    /* 6️⃣ Commit change */
+    await git.add("names.json");
     await git.commit(`Added name: ${name}`);
+
+    /* 7️⃣ Push commit */
     await git.push("origin", "main");
 
     res.json({
@@ -56,9 +75,13 @@ app.post("/add-name", async (req, res) => {
       message: "Name added and pushed 🚀",
       data: newEntry,
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Git operation failed" });
+    console.error("Git operation error:", error);
+
+    res.status(500).json({
+      error: "Git operation failed",
+    });
   }
 });
 
@@ -66,8 +89,12 @@ app.post("/add-name", async (req, res) => {
    Get names list
 --------------------------------*/
 app.get("/names", async (req, res) => {
-  const names = await fs.readJson(FILE_PATH);
-  res.json(names);
+  try {
+    const names = await fs.readJson(FILE_PATH);
+    res.json(names);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to read names" });
+  }
 });
 
 /* -----------------------------
@@ -75,6 +102,7 @@ app.get("/names", async (req, res) => {
 --------------------------------*/
 app.get("/pipeline-status", async (req, res) => {
   try {
+
     const response = await axios.get(
       `https://api.github.com/repos/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs`,
       {
@@ -85,19 +113,23 @@ app.get("/pipeline-status", async (req, res) => {
       }
     );
 
-    const latest = response.data.workflow_runs[0];
+    const latestRun = response.data.workflow_runs[0];
 
     res.json({
-      status: latest.status,
-      conclusion: latest.conclusion,
-      url: latest.html_url,
+      status: latestRun.status,
+      conclusion: latestRun.conclusion,
+      url: latestRun.html_url,
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch pipeline status" });
   }
 });
 
+/* -----------------------------
+   Start Server
+--------------------------------*/
 app.listen(5000, () => {
   console.log("🚀 Backend running on http://localhost:5000");
 });
