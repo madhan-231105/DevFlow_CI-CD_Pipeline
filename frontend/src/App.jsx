@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 const STAGES = ["Code Push", "Build", "Test", "Deploy"];
-const API = "https://devflow-ci-cd-pipeline.onrender.com";
+
+// ✅ FIX 1: Define the API variable here so the functions can use it
+const API = "http://localhost:5000"; 
 const REPO_OWNER = "madhan-231105";
 const REPO_NAME = "DevFlow_CI-CD_Pipeline";
 
 function App() {
-  const [names, setNames] = useState([]);
   const [pipelineStatus, setPipelineStatus] = useState(null);
   const [pipelineHistory, setPipelineHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,9 @@ function App() {
   // Fetch latest pipeline status from your backend
   const fetchStatus = async () => {
     try {
+      // ✅ FIX 2: Now ${API} correctly refers to http://localhost:5000
       const res = await fetch(`${API}/pipeline-status`);
+      if (!res.ok) throw new Error("Server responded with an error");
       const data = await res.json();
       setPipelineStatus(data);
     } catch (error) {
@@ -29,6 +32,7 @@ function App() {
       const res = await fetch(
         `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?per_page=8`
       );
+      if (!res.ok) throw new Error("GitHub API error");
       const data = await res.json();
       setPipelineHistory(data.workflow_runs || []);
     } catch (error) {
@@ -41,13 +45,17 @@ function App() {
     if (!name) return;
     setLoading(true);
     try {
-      await fetch(`${API}/add-name`, {
+      const res = await fetch(`${API}/add-name`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name })
       });
-      fetchStatus();
-      fetchHistory();
+      
+      if (res.ok) {
+        // Refresh data after successful trigger
+        fetchStatus();
+        fetchHistory();
+      }
     } catch (error) {
       console.error("Failed to trigger pipeline:", error);
     }
@@ -57,11 +65,13 @@ function App() {
   useEffect(() => {
     fetchStatus();
     fetchHistory();
-    // Poll every 15 seconds (to avoid GitHub API rate limits)
+    
+    // Poll every 15 seconds
     const interval = setInterval(() => {
       fetchStatus();
       fetchHistory();
     }, 15000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -77,8 +87,10 @@ function App() {
         <div className="pipeline">
           {STAGES.map((stage, index) => {
             let statusClass = "";
+            // Logic for active/completed stages
             if (pipelineStatus?.status === "in_progress" && index === 1) statusClass = "active";
             if (pipelineStatus?.conclusion === "success") statusClass = "completed";
+            
             return (
               <div key={stage} className={`stage ${statusClass}`}>
                 {stage}
@@ -128,7 +140,7 @@ function App() {
                         {run.conclusion || run.status}
                       </span>
                     </td>
-                    <td className="commit-sha">{run.head_sha.slice(0, 7)}</td>
+                    <td className="commit-sha">{run.head_sha?.slice(0, 7)}</td>
                     <td className="time-cell">{new Date(run.created_at).toLocaleTimeString()}</td>
                   </tr>
                 ))}
